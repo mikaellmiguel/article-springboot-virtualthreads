@@ -1,0 +1,55 @@
+# Nome do arquivo: docker-compose.yml
+version: '3.8'
+
+services:
+  # 1. O Alvo: Sua Aplicação Spring Boot
+  api-spring:
+    build: . # Constrói a imagem usando o Dockerfile local
+    container_name: api-spring
+    ports:
+      - "8080:8080" # Expõe a porta 8080 para o k6 atacar
+    # --- APLICAÇÃO DOS LIMITES ---
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'  # Limite de 2 CPUs
+          memory: '2g'   # Limite de 2 GB de RAM
+
+  # 2. O Coletor: Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090" # Expõe a UI do Prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+
+    depends_on:
+      - api-spring # Garante que a API inicie primeiro
+
+  # 3. O Visualizador: Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    ports:
+      - "3000:3000" # Expõe a UI do Grafana
+    depends_on:
+      - prometheus # Garante que o Prometheus inicie primeiro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Mapeamento explícito do Socket
+    command:
+      - --docker_only=true
+    privileged: true
+
+volumes:
+  grafana-storage:
+  prometheus-data:

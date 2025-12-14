@@ -1,0 +1,9 @@
+scrape_configs:
+  - job_name: 'spring-boot-app'
+    metrics_path: '/actuator/prometheus' # A URL que o Spring expõe
+    static_configs:
+      - targets: ['api-spring:8080']
+    
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080'] #
